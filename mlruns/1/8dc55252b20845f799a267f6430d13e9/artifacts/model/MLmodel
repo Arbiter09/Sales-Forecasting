@@ -1,0 +1,35 @@
+artifact_path: model
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.12.6
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.5.2
+mlflow_version: 2.16.2
+model_size_bytes: 5501696
+model_uuid: 0bb34dc7871d49f5974af506fe69f2fc
+run_id: 8dc55252b20845f799a267f6430d13e9
+saved_input_example_info:
+  artifact_path: input_example.json
+  pandas_orient: split
+  serving_input_path: serving_input_example.json
+  type: dataframe
+signature:
+  inputs: '[{"type": "long", "name": "Store", "required": true}, {"type": "long",
+    "name": "Dept", "required": true}, {"type": "double", "name": "IsHoliday", "required":
+    true}, {"type": "double", "name": "Temperature", "required": true}, {"type": "double",
+    "name": "Fuel_Price", "required": true}, {"type": "double", "name": "CPI", "required":
+    true}, {"type": "double", "name": "Unemployment", "required": true}, {"type":
+    "long", "name": "year", "required": true}, {"type": "long", "name": "week_of_year",
+    "required": true}, {"type": "double", "name": "Markdown", "required": true}]'
+  outputs: '[{"type": "double", "name": "Weekly_Sales", "required": true}]'
+  params: null
+utc_time_created: '2024-11-21 00:49:17.041360'

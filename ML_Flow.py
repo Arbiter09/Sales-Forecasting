@@ -4,35 +4,49 @@ from sklearn.ensemble import RandomForestRegressor
 import mlflow
 import mlflow.sklearn
 from mlflow.models.signature import infer_signature
-from mlflow.tracking import MlflowClient
+from mlflow.tracking import MlflowClient  # Import MlflowClient to manage experiments
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 from sklearn.model_selection import train_test_split
-import traceback
-
-# Set MLflow tracking URI to the correct directory
-mlflow_tracking_uri = "file:///C:/Users/shahj/OneDrive/Desktop/Projects/Final-Retail-Sales-Forecasting-main/mlruns_tracking"
-mlflow.set_tracking_uri(mlflow_tracking_uri)
-
-print(f"MLflow tracking URI is set to: {mlflow.get_tracking_uri()}")
 
 # Load your dataset
-df = pd.read_csv(r'C:\Users\shahj\OneDrive\Desktop\Projects\Final-Retail-Sales-Forecasting-main\Cleaned_Store_data2.csv')
+dataset_path = r'C:\Users\shahj\OneDrive\Desktop\Projects\Final-Retail-Sales-Forecasting-main\Cleaned_Store_data2.csv'
+
+# Validate dataset
+if not os.path.exists(dataset_path):
+    raise FileNotFoundError(f"Dataset not found at: {dataset_path}")
+
+df = pd.read_csv(dataset_path)
+if df.empty:
+    raise ValueError("The dataset is empty. Please provide a valid dataset.")
+
+# Ensure all required columns are present
+required_columns = ['Weekly_Sales', 'Size', 'Type', 'Date', 'weekly_sales', 'Markdown']
+missing_columns = [col for col in required_columns if col not in df.columns]
+if missing_columns:
+    raise ValueError(f"Missing columns in the dataset: {missing_columns}")
+
 data = df.copy()
 
-# Apply the inverse transformation
 def inv_trans(x):
     if x == 0:
         return x
     else:
         return 1 / x
 
+# Apply inverse transformation
 data['Markdown'] = data['Markdown'].apply(inv_trans)
 
 # Prepare the data
 x = data.drop(['Weekly_Sales', 'Size', 'Type', 'Date', 'weekly_sales'], axis=1)
 y = data['Weekly_Sales']
 
+# Split the data
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25, random_state=30)
+
+# Set MLflow tracking URI to a dedicated directory
+mlflow_tracking_uri = "http://127.0.0.1:5001"
+mlflow.set_tracking_uri(mlflow_tracking_uri)
+print(f"MLflow tracking URI is set to: {mlflow.get_tracking_uri()}")
 
 # Define the directory for local models
 local_models_dir = r"C:\Users\shahj\OneDrive\Desktop\Projects\Final-Retail-Sales-Forecasting-main\local_models"
@@ -54,10 +68,10 @@ else:
 
 # Define the Random Forest Model
 def randomforest():
-    n_estimators_val = [50, 100, 200]
-    Max_depth = [10, 10, 10]
-    Min_samples_split = [5, 5, 5]
-    Min_samples_leaf = [7, 7, 7]
+    n_estimators_val = [50, 100, 200, 300, 350, 400]
+    Max_depth = [10, 10, 10, 25, 25, 25]
+    Min_samples_split = [5, 5, 5, 15, 15, 15]
+    Min_samples_leaf = [7, 7, 7, 13, 13, 13]
 
     for i, j, k, l in zip(Max_depth, Min_samples_split, Min_samples_leaf, n_estimators_val):
         # Initialize and train the model
@@ -110,17 +124,15 @@ def randomforest():
             # Log the trained model into MLflow artifacts with signature
             try:
                 print("Logging model to MLflow artifacts...")
-                artifact_path = 'model'
                 mlflow.sklearn.log_model(
                     sk_model=model_rf,
-                    artifact_path=artifact_path,
+                    artifact_path='model',
                     input_example=input_example,
                     signature=signature
                 )
-                print(f"Run ID: {run_id} - Model logged to artifacts at path: {artifact_path}")
+                print(f"Run ID: {run_id} - Model logged to artifacts")
             except Exception as e:
-                print("Error logging model to MLflow artifacts:")
-                traceback.print_exc()  # Print full traceback to identify exact issue
+                print(f"Error logging model to MLflow artifacts: {e}")
 
             # Save the model locally using an absolute path
             local_model_path = os.path.join(local_models_dir, f'local_model_{run_id}')
@@ -135,7 +147,6 @@ def randomforest():
                 print("Model saved locally.")
             except Exception as e:
                 print(f"Error saving model locally: {e}")
-                traceback.print_exc()  # Print full traceback to identify exact issue
 
             # Test loading the model from MLflow to verify it was saved correctly
             try:
@@ -144,10 +155,9 @@ def randomforest():
                 loaded_model = mlflow.sklearn.load_model(model_uri)
                 sample_predictions = loaded_model.predict(x_test.head())
                 print("Sample predictions from loaded model:", sample_predictions)
-            except mlflow.exceptions.MlflowException as e:
+            except Exception as e:
                 print(f"Error loading model from MLflow artifacts: {e}")
-                traceback.print_exc()  # Print full traceback to identify exact issue
 
 # Run the random forest training and logging
+print(f"MLflow tracking URI is set to: {mlflow.get_tracking_uri()}")
 randomforest()
-
